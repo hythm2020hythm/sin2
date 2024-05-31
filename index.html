@@ -1,0 +1,512 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz App</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        #score-counter {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px;
+            background-color: #333;
+            border-bottom-right-radius: 10px;
+            color: white;
+            z-index: 999;
+        }
+
+        #quiz-container {
+            max-width: 600px;
+            margin: auto;
+            padding: 60px 20px 20px; /* تم تعديل ال padding ليضمن عدم تغطية الصورة */
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            position: relative; /* تمت إضافة position: relative; للسماح لـ #score-counter بالتحكم فيه */
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: white;
+            background-color: #2196F3;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        button {
+            background-color: #2196F3;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0c0c0c;
+        }
+
+        #timer {
+            margin-bottom: 10px;
+        }
+
+        #result-container {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .result-text {
+            margin-bottom: 10px;
+        }
+
+        .correct {
+            background-color: green;
+            color: white;
+        }
+
+        .incorrect {
+            background-color: red;
+            color: white;
+        }
+
+        /* CSS for displaying images to fit the screen */
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="score-counter">Score: <span id="score">0</span></div>
+
+    <div id="quiz-container">
+        <img id="question-image" src="" alt="Question Image">
+        <div id="choices"></div>
+        <button onclick="checkAnswer()">Submit Answer</button>
+        <p id="timer"></p>
+    </div>
+
+    <div id="result-container">
+        <h2>Quiz Result</h2>
+        <p class="result-text" id="result"></p>
+        <div id="correct-answers"></div>
+        <button id="retryBtn" style="display: none;" onclick="retryQuiz()">Retry Quiz</button>
+    </div>
+
+    <script>
+        var currentQuestion = 0;
+        var score = 0;
+        var timeLeft = 1800; // تحديد عدد الثواني
+        var timerInterval;
+
+        var quizData = [
+ 
+        
+        {
+        "question": "تحميل الدفينا زوج من العيون ",
+        "choices": ["البسيطة", "المركبة"],
+        "correctAnswer": "المركبة"
+    },
+    {
+        "question": "رأسه على شكل خرطوم طويل ",
+        "choices": ["الاسيديا", "الدفينا", "البريباتس"],
+        "correctAnswer": "الدفينا"
+    },
+    {
+        "question": "تتغذي الدفينا على  ",
+        "choices": ["طحالب خضراء", "طحالب حمراء", "طحالب بنية"],
+        "correctAnswer": "طحالب خضراء"
+    },
+    {
+        "question": "عدد أزواج أرجل الدفينا ",
+        "choices": ["2", "4", "6"],
+        "correctAnswer": "6"
+    },
+    {
+        "question": "ما التكاثر في الدفينا ",
+        "choices": ["جنسي", "لا جنسي"],
+        "correctAnswer": "لا جنسي"
+    },
+    {
+        "question": "تتكون الدفينا من منطقتين ",
+        "choices": ["الراس والصدر", "الراس والبطن", "الراس والجذع"],
+        "correctAnswer": "الراس والبطن"
+    },
+    {
+        "question": "ديدان الأرض من الديدان ",
+        "choices": ["الخيطية", "الحلقية", "المفلطحة"],
+        "correctAnswer": "الخيطية"
+    },
+    {
+        "question": "تتكاثر الدفينا عن طريق ",
+        "choices": ["الانشطار الثنائي", "التوالد البكري", "التبرعم"],
+        "correctAnswer": "التوالد البكري"
+    },
+    {
+        "question": "الكوكب الأزرق هو ",
+        "choices": ["عطارد", "زحل", "نبتون"],
+        "correctAnswer": "نبتون"
+    },
+          {
+        "question": "ناتج تفاعل امين + امين ",
+        "choices": ["اميد + حمض", "اميد + كحول", "اميد + بروتين"],
+        "correctAnswer": "اميد + بروتين"
+    },
+    {
+        "question": "كربونات الكالسيوم عبارة عن ",
+        "choices": ["حجر جيري", "حجر رسوبي", "حجر ناري"],
+        "correctAnswer": "حجر جيري"
+    },
+    {
+        "question": "هلجنة البنزين تعطي ",
+        "choices": ["ثنائي كلوريد البنزين", "رباعي كلوريد البنزين", "سداسي كلوريد البنزين"],
+        "correctAnswer": "سداسي كلوريد البنزين"
+    },
+    {
+        "question": "تسمى الغدة الموجودة في رأس العنكبوت باسم ",
+        "choices": ["غدة السم", "غدة توتية", "غدة الكظرية"],
+        "correctAnswer": "غدة السم"
+    },
+    {
+        "question": "العنصر الذي يستخدم في صناعة البارود ",
+        "choices": ["نترات البوتاسيوم", "الكبريت", "الصوديوم"],
+        "correctAnswer": "نترات البوتاسيوم"
+    },
+                
+          
+    {
+        "question": "يستخدم لتثبيت الصبغة على القماش ",
+        "choices": ["حمض الكبريتيك", "حمض الهيدروكلوريك", "حمض الخليك"],
+        "correctAnswer": "حمض الخليك"
+    },
+    {
+        "question": "يحتوي الغاز الطبيعي على نسبة من غاز الميثان ",
+        "choices": ["78%", "88%", "98%"],
+        "correctAnswer": "98%"
+    },
+    {
+        "question": "اختزال البروبان اميد يعطي ",
+        "choices": ["ايثان", "ميثان", "بروبان"],
+        "correctAnswer": "ايثان"
+    },
+    {
+        "question": "اختزال ايثان اميد يعطي ",
+        "choices": ["ايثان", "ميثان", "بروبان"],
+        "correctAnswer": "ايثان"
+    },
+    {
+        "question": "تمر دورة حياة الجمبري من مراحل ",
+        "choices": ["4", "6", "8"],
+        "correctAnswer": "8"
+    },
+    {
+        "question": "المسؤول عن إنتاج الطاقة في الخلية ",
+        "choices": ["الغشاء البلازمي", "النواة", "الميتوكوندريا"],
+        "correctAnswer": "الميتوكوندريا"
+    },
+    {
+        "question": "ترتيب الألومنيوم والنحاس والحديد من حيث الأعلى توصيل للحرارة ",
+        "choices": ["نحاس - الألومنيوم - حديد", "حديد - الألومنيوم - نحاس", "الألومنيوم - نحاس - حديد"],
+        "correctAnswer": "نحاس - الألومنيوم - حديد"
+    },
+    {
+        "question": "أيهما أكثر قاعديه ",
+        "choices": ["كلورو أمين", "ميثيل أمين", "أنيلين"],
+        "correctAnswer": "ميثيل أمين"
+    },
+    {
+        "question": "المسؤول عن حمل الدم المؤكسج في الجمبري ",
+        "choices": ["الأوردة الخيشومية الصادرة", "الأوردة الخيشومية الواردة", "الشريان الخيشومي الصادر"],
+        "correctAnswer": "الأوردة الخيشومية الصادرة"
+    },
+    {
+        "question": "المسؤول عن حمل الدم الغير مؤكسج في الجمبري ",
+        "choices": ["الأوردة الخيشومية الصادرة", "الأوردة الخيشومية الواردة", "الشريان الخيشومي الصادر"],
+        "correctAnswer": "الأوردة الخيشومية الواردة"
+    },
+    {
+        "question": "الحيوان الذي يعتبر من الذيل حبليات ",
+        "choices": ["الأميبا", "البريباتس", "الاسيديا"],
+        "correctAnswer": "الاسيديا"
+    },
+    {
+        "question": "الحيوان الذي يعتبر من الرأس حبليات ",
+        "choices": ["الأميبا", "الاسيديا", "السهيم"],
+        "correctAnswer": "السهيم"
+    },
+    {
+        "question": "خلايا مفرغة موجودة في اللافقاريات في المياه العذبة ",
+        "choices": ["الديدان", "الحشرات", "الزواحف"],
+        "correctAnswer": "الديدان"
+    },
+    {
+        "question": "ناتج تفاعل كلوريد الأمونيوم + سيانات الفضة ",
+        "choices": ["كلوريد الفضة", "اليوريا", "حمض النيتريك"],
+        "correctAnswer": "كلوريد الفضة"
+    },
+    {
+        "question": "الحد الأدنى من كمية البول المفقودة يوميا تساوي ",
+        "choices": ["ربع لتر", "نصف لتر", "ثلث لتر"],
+        "correctAnswer": "نصف لتر"
+    },
+          {
+        "question": "ناتج تفاعل الامونيا + انهيدريد الحمض؟",
+        "choices": ["اميد غير مستبدل", "امين", "كحول"],
+        "correctAnswer": "اميد غير مستبدل"
+    },
+    {
+        "question": "ناتج تفاعل امين أولي + حمض عضوي؟",
+        "choices": ["اميد احادي الاستبدال", "اميد ثنائي الاستبدال", "اميد ثلاثي الاستبدال"],
+        "correctAnswer": "اميد احادي الاستبدال"
+    },
+    {
+        "question": "امين ثانوي + حمض عضوي يعطي؟",
+        "choices": ["اميد احادي الاستبدال", "اميد ثنائي الاستبدال", "اميد ثلاثي الاستبدال"],
+        "correctAnswer": "اميد ثنائي الاستبدال"
+    },
+    {
+        "question": "في الاستر التحلل الحامضي يعطي؟",
+        "choices": ["كيتون", "الدهيد", "حمض + كحول"],
+        "correctAnswer": "حمض + كحول"
+    },
+    {
+        "question": "في الاستر التحلل القاعدي يعطي ",
+        "choices": ["حمض + كحول", "ملح + كحول", "اميد + كحول"],
+        "correctAnswer": "ملح + كحول"
+    },
+    {
+        "question": "من الاحماض غير الحلقية ",
+        "choices": ["البنزويك", "الفيثاليك", "الاوكساليك"],
+        "correctAnswer": "الاوكساليك"
+    },
+    {
+        "question": "الماء الذي يوجد على النباتات صباحا ناتج عن عملية ",
+        "choices": ["الندي", "النتح", "الري"],
+        "correctAnswer": "الندي"
+    },
+    {
+        "question": "المرحلة التي يتكون فيها قرون الاستشعار في الجمبري ",
+        "choices": ["اليرقة", "الشباب", "المايسس"],
+        "correctAnswer": "الشباب"
+    },
+    {
+        "question": "غاز مسؤول عن نضج الثمار ",
+        "choices": ["الميثان", "ثاني اكسيد الكربون", "الاثيلين"],
+        "correctAnswer": "الاثيلين"
+    },
+    {
+        "question": "يتكون جزيء ATP من ",
+        "choices": ["مجموعة فوسفات", "مجموعتان من الفوسفات", "ثلاث مجموعات فوسفات"],
+        "correctAnswer": "ثلاث مجموعات فوسفات"
+    },
+    {
+        "question": "اقوى الكحولات ",
+        "choices": ["الايثانول", "الميثانول", "البروبانول"],
+        "correctAnswer": "الميثانول"
+    },
+    {
+        "question": "تحدث ظاهرة السراب بسبب ",
+        "choices": ["انعكاس اشعة الضوء", "انكسار اشعة الضوء", "حيود اشعة الضوء"],
+        "correctAnswer": "انعكاس اشعة الضوء"
+    },
+    {
+        "question": "يخرج الدم الفاسد من القلب الى ",
+        "choices": ["الكبد والبنكرياس", "الكبد والمعدة", "الطحال والكبد"],
+        "correctAnswer": "الطحال والكبد"
+    },
+    {
+        "question": "الميزاب العنقي للجمبري على شكل ",
+        "choices": ["√", "_", "٧"],
+        "correctAnswer": "٧"
+    },
+    {
+        "question": "من وظائفه تنقية الدم الفاسد ",
+        "choices": ["الكبد", "الكلية", "الطحال"],
+        "correctAnswer": "الطحال"
+    },
+    {
+        "question": "يحدث كسوف القمر عندما يكون ",
+        "choices": ["القمر بين الارض والشمس", "الارض بين القمر والشمس", "الشمس بين الارض والقمر"],
+        "correctAnswer": "القمر بين الارض والشمس"
+    },
+    {
+        "question": "الرابطة بين جزيئات الماء ",
+        "choices": ["تساهمية", "ايونية", "هيدروجينية"],
+        "correctAnswer": "تساهمية"
+    },
+    {
+        "question": "عند هدرجة البنزين يتكون ",
+        "choices": ["بيوتان حلقي", "هكسان حلقي", "بروبان حلقي"],
+        "correctAnswer": "هكسان حلقي"
+    },
+    {
+        "question": "نوع من الامينات لا يتفاعل مع الاحماض ",
+        "choices": ["الامينات الأولية", "الامينات الثانوية", "الامينات الثلاثية"],
+        "correctAnswer": "الامينات الثلاثية"
+    },
+    {
+        "question": "السكروز سكر ",
+        "choices": ["احادي", "ثنائي", "ثلاثي"],
+        "correctAnswer": "ثنائي"
+    },
+
+        ];
+
+        // قم بترتيب الأسئلة بشكل عشوائي
+        shuffleArray(quizData);
+
+        function shuffleArray(array) {
+            for (var i = array.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var temp = array[i];
+                array[i] = array[j];
+                array[j] = temp;
+            }
+            return array;
+        }
+
+        function loadQuestion() {
+            var currentQuiz = quizData[currentQuestion];
+
+            var questionImageElement = document.getElementById('question-image');
+            var choicesElement = document.getElementById('choices');
+
+            if (currentQuiz.imageSrc) {
+                questionImageElement.src = currentQuiz.imageSrc; // تعيين مصدر الصورة
+                questionImageElement.style.display = 'block'; // عرض الصورة
+            } else {
+                questionImageElement.style.display = 'none'; // إخفاء الصورة إذا لم تكن متاحة
+            }
+
+            choicesElement.innerHTML = '';
+
+            // عرض السؤال كنص عادي إذا لم يكن هناك صورة
+            if (!currentQuiz.imageSrc) {
+                choicesElement.innerHTML += '<p>' + currentQuiz.question + '</p>';
+            }
+
+            for (var i = 0; i < currentQuiz.choices.length; i++) {
+                var choice = currentQuiz.choices[i];
+                choicesElement.innerHTML += '<label><input type="radio" name="choice" value="' + choice + '"> ' + choice + '</label>';
+            }
+
+            startTimer(); // بدء الموقت عند تحميل كل سؤال
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(function () {
+                document.getElementById('timer').innerHTML = 'Time Left: ' + timeLeft + 's';
+
+                if (timeLeft === 0) {
+                    clearInterval(timerInterval);
+                    alert('Time is up!'); // عرض رسالة انتهاء الوقت
+                    showResult(); // عرض النتيجة النهائية عند انتهاء الوقت
+                } else {
+                    timeLeft--;
+                }
+            }, 1000);
+        }
+
+        function checkAnswer() {
+            var selectedOption = document.querySelector('input[name="choice"]:checked');
+            if (!selectedOption) {
+                alert('Please select an answer.');
+                return;
+            }
+
+            var userAnswer = selectedOption.value;
+            var currentQuiz = quizData[currentQuestion];
+
+            var choicesLabels = document.querySelectorAll('label');
+
+            for (var i = 0; i < choicesLabels.length; i++) {
+                if (currentQuiz.correctAnswer === currentQuiz.choices[i]) {
+                    choicesLabels[i].classList.add('correct');
+                } else {
+                    choicesLabels[i].classList.add('incorrect');
+                }
+            }
+
+            if (userAnswer === currentQuiz.correctAnswer) {
+                score++;
+                document.getElementById('score').textContent = score;
+            }
+
+            clearInterval(timerInterval); // قبل التحقق من الإجابة، قم بإيقاف الموقت
+
+            currentQuestion++;
+
+            if (currentQuestion < quizData.length) {
+                setTimeout(function () {
+                    loadQuestion();
+                    resetColors();
+                }, 3000);
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            var resultElement = document.getElementById('result');
+            var correctAnswersElement = document.getElementById('correct-answers');
+
+            resultElement.innerHTML = 'Your Score: ' + score + ' out of ' + quizData.length;
+
+            correctAnswersElement.innerHTML = '<h3>Correct Answers:</h3>';
+            for (var i = 0; i < quizData.length; i++) {
+                var q = quizData[i];
+                var imgSrc = q.imageSrc;
+                var imgElement = '<img src="' + imgSrc + '" alt="Question Image">';
+                correctAnswersElement.innerHTML += imgElement + '<strong>Q: ' + q.question + '</strong><br>A: ' + q.correctAnswer + '<br>';
+            }
+
+            document.getElementById('result-container').style.display = 'block';
+            document.getElementById('retryBtn').style.display = 'block';
+        }
+
+        function resetColors() {
+            var choicesLabels = document.querySelectorAll('label');
+            for (var i = 0; i < choicesLabels.length; i++) {
+                choicesLabels[i].classList.remove('correct', 'incorrect'); // إزالة الأنماط المضافة سابقًا
+            }
+        }
+
+        function retryQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            timeLeft = 1800; // إعادة تعيين الوقت للقيمة الأصلية
+
+            // قم بترتيب الأسئلة بشكل عشوائي عند إعادة المحاولة
+            shuffleArray(quizData);
+
+            document.getElementById('score').textContent = score; // تحديث قيمة العداد إلى الصفر
+            loadQuestion();
+            resetColors();
+
+            document.getElementById('result-container').style.display = 'none';
+            document.getElementById('retryBtn').style.display = 'none';
+        }
+
+        loadQuestion();
+    </script>
+
+</body>
+
+</html>
